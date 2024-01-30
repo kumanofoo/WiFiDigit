@@ -1,0 +1,33 @@
+[area]
+jma_offices = "016000"   # Ishikari Sorachi Shiribeshi
+jma_area_code = "14163"  # Sapporo
+reference_time = 5       # If data is collected between midnight and 4:59 a.m.,
+                         # the temperature for the same day will be used;
+                         # if between 5:00 a.m. and 11:59 p.m.,
+                         # the temperature for the next day will be used.
+
+[wifidigit]
+url = "http://example.com"  # URL to a Arduino with WiFiDigit running.
+
+# Doesn't display upside down.
+[[actions]]
+method = "PUT"
+command = "upside-down/false"
+
+# Display lowest temperture
+# '{tempLowest}' is replaced with weather forecast lowest temperature.
+[[actions]]
+method = "PUT"
+command = "2digit/{tempLowest}"
+
+# Display Hourly bar
+# '{nowHour}' is replaced with current time hour.
+[[actions]]
+method = "PUT"
+command = "bar/{nowHour}"
+
+# Blink with 1 sec on and 10 msec off if the temperature is -2 degrees Celsius or lower.
+[[actions]]
+lowest = -2
+method = "PUT"
+command = "blink-flipped/1000.10"
