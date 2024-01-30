@@ -1,12 +1,18 @@
+# WiFiDigit and Keepipe
+**WiFiDigit** displays two numbers on Arduino UNO R4 WiFi LED Matrix over HTTP.
+
+An example implementation of the WiFiDigit client is **Keepipe**.
+It fetches the lowest or highest temperature from [Japan Meteorological Agency](https://www.jma.go.jp/) and
+sends them to WiFiDigit over HTTP. Its documentation is in [keepipe](./keepipe/README.md) directory.
+
 # WiFiDigit
-WiFiDigit displays two numbers on Arduino UNO R4 WiFi LED Matrix through HTTP.
 
 <img src="screenshot.gif">
 
 ```sh
 $ curl -X PUT http://192.168.0.1/2digit/-6
 $ curl -X PUT http://192.168.0.1/bar/5
-$ curl -X PUT http://192.168.0.1/blink-flipped/true/1000.10
+$ curl -X PUT http://192.168.0.1/blink-flipped/1000.10
 ```
 
 ## Build and run
@@ -32,7 +38,7 @@ Finally, build and upload the sketch on Arduino IDE.
 WiFiDigit sends WiFi status including IP address to serial monitor,
 and displays blinking "❤" on LED matrix until it gets a first command.
 
-### Build with Arduino CLI
+## Build with Arduino CLI
 Check your board:
 ```sh
 $ arduino-cli board list

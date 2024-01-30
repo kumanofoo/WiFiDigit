@@ -19,7 +19,7 @@ public:
   int blinkInvert();
   void clearMatrix();
   void animatedClear();
-  void loadBitmap(uint16_t bitmap[MATRIX_HEIGHT]);
+  void loadBitmap(const uint16_t bitmap[MATRIX_HEIGHT]);
   void testPattern();
   void upsideDown(bool upside_down);
   
@@ -30,10 +30,12 @@ private:
   int _blink_flag = 0;
   bool _upside_down;
   ArduinoLEDMatrix _matrix;
-  void _bitmap2frame(uint32_t frame[FRAME_HEIGHT]);
-  void _setMatrix(uint16_t bitmap[MATRIX_HEIGHT]);
-  void _setMatrixInvert(uint16_t bitmap[MATRIX_HEIGHT]);
-  void _reverseBits(uint16_t x[MATRIX_HEIGHT], uint16_t r[MATRIX_HEIGHT]);
+  void _bitmap2frame(const uint16_t bitmap[MATRIX_HEIGHT], uint32_t frame[FRAME_HEIGHT]);
+  void _setMatrix();
+  void _setMatrix(const uint16_t bitmap[MATRIX_HEIGHT]);
+  void _setMatrixInvert();
+  void _setMatrixInvert(const uint16_t bitmap[MATRIX_HEIGHT]);
+  void _reverseBits(const uint16_t x[MATRIX_HEIGHT], uint16_t r[MATRIX_HEIGHT]);
   uint16_t _reverseBits(uint16_t x);
 };
 
@@ -69,9 +71,9 @@ void LEDMatrixDigit::print(int number) {
   int n = number < 0 ? number * -1 : number;
   int ten = n / 10;
   int one = n % 10;
-  _bitmap[0] = 0;
-  _bitmap[1] = 0;
-  int row = 1;
+  uint16_t bitmap[MATRIX_HEIGHT];
+  int row = 0;
+  bitmap[row++] = 0;
   int right_spacing = 0;
   if (sign == 0) {
     right_spacing += 1;
@@ -90,10 +92,12 @@ void LEDMatrixDigit::print(int number) {
     b <<= FONT_WIDTH;
     b += number_fonts[one][i];
     b <<= right_spacing;
-    _bitmap[row++] = b;
+    bitmap[row++] = b;
   }
-  _bitmap[7] = 0;
-  _setMatrix(_bitmap);
+  for (int i = row; i < MATRIX_HEIGHT; i++) {
+    bitmap[i] = 0;
+  }
+  _setMatrix(bitmap);
   _blink_flag = 0;
 }
 
@@ -143,7 +147,7 @@ void LEDMatrixDigit::setDot(int x, int y, bool value) {
   else {
     _bitmap[bitmap_y] &= ~(1 << bitmap_x);
   }
-  _setMatrix(_bitmap);
+  _setMatrix();
 }
 
 /**
@@ -161,7 +165,7 @@ int LEDMatrixDigit::blink() {
   }
   else {
     _blink_flag = 0;
-    _setMatrix(_bitmap);
+    _setMatrix();
     return 0;
   }
 }
@@ -173,15 +177,13 @@ int LEDMatrixDigit::blink() {
  */
 int LEDMatrixDigit::blinkInvert() {
   if (_blink_flag == 0) {
-    save0();
     _blink_flag = 1;
-    _setMatrixInvert(_bitmap);
-    load0();
+    _setMatrixInvert();
     return 1;
   }
   else {
     _blink_flag = 0;
-    _setMatrix(_bitmap);
+    _setMatrix();
     return 0;
   }
 }
@@ -216,7 +218,7 @@ void LEDMatrixDigit::animatedClear() {
  *
  * @param 'bitmap' in MATRIX_WIDTH and MATRIX_HEIGHT.
  */
-void LEDMatrixDigit::loadBitmap(uint16_t bitmap[MATRIX_HEIGHT]) {
+void LEDMatrixDigit::loadBitmap(const uint16_t bitmap[MATRIX_HEIGHT]) {
   _setMatrix(bitmap);
 }
 
@@ -352,33 +354,51 @@ void LEDMatrixDigit::upsideDown(bool upside_down) {
  * 
  * @param Convert private member '_bitmap' and store into 'frame'.
  */
-void LEDMatrixDigit::_bitmap2frame(uint32_t frame[FRAME_HEIGHT]) {
+void LEDMatrixDigit::_bitmap2frame(const uint16_t bitmap[MATRIX_HEIGHT], uint32_t frame[FRAME_HEIGHT]) {
   uint32_t b = 0;
   // 12 + 12 + 8
-  b = _bitmap[0] & 0x0fff;
+  b = bitmap[0] & 0x0fff;
   b <<= 12;
-  b += _bitmap[1] & 0x0fff;
+  b += bitmap[1] & 0x0fff;
   b <<= 8;
-  b += (_bitmap[2] >> 4) & 0x00ff;
+  b += (bitmap[2] >> 4) & 0x00ff;
   frame[0] = b;
 
   // 4 + 12 + 12 + 4
-  b = _bitmap[2] & 0x000f;
+  b = bitmap[2] & 0x000f;
   b <<= 12;
-  b += _bitmap[3] & 0x0fff;
+  b += bitmap[3] & 0x0fff;
   b <<= 12;
-  b += _bitmap[4] & 0x0fff;
+  b += bitmap[4] & 0x0fff;
   b <<= 4;
-  b += (_bitmap[5] >> 8) & 0x000f;
+  b += (bitmap[5] >> 8) & 0x000f;
   frame[1] = b;
 
   // 8 + 12 + 12
-  b = _bitmap[5] & 0x00ff;
+  b = bitmap[5] & 0x00ff;
   b <<= 12;
-  b += _bitmap[6] & 0x0fff;
+  b += bitmap[6] & 0x0fff;
   b <<= 12;
-  b += _bitmap[7] & 0x0fff;
+  b += bitmap[7] & 0x0fff;
   frame[2] = b;
+}
+
+/**
+ * Set _bitmap to LED matrix.
+ * 
+*/
+void LEDMatrixDigit::_setMatrix()
+{
+  uint32_t frame[FRAME_HEIGHT];
+  if (_upside_down) {
+    uint16_t rev[MATRIX_HEIGHT];
+    _reverseBits(_bitmap, rev);
+    _bitmap2frame(rev, frame);
+  }
+  else {
+    _bitmap2frame(_bitmap, frame);
+  }
+  _matrix.loadFrame(frame);
 }
 
 /**
@@ -388,18 +408,33 @@ void LEDMatrixDigit::_bitmap2frame(uint32_t frame[FRAME_HEIGHT]) {
  *
  * 'bitmap' is copied to '_bitmap' private member.
 */
-void LEDMatrixDigit::_setMatrix(uint16_t bitmap[MATRIX_HEIGHT])
+void LEDMatrixDigit::_setMatrix(const uint16_t bitmap[MATRIX_HEIGHT])
 {
+  for (int i = 0; i < MATRIX_HEIGHT; i++) {
+    _bitmap[i] = bitmap[i];
+  }
+  _setMatrix();
+}
+
+/**
+ * Set _bitmap to LED matrix with inverting all bits.
+ * 
+*/
+void LEDMatrixDigit::_setMatrixInvert()
+{
+  uint32_t frame[FRAME_HEIGHT];
+  uint16_t invert[MATRIX_HEIGHT];
+  for (int i = 0; i < MATRIX_HEIGHT; i++) {
+    invert[i] = ~_bitmap[i];
+  }
   if (_upside_down) {
-    _reverseBits(bitmap, _bitmap);
+    uint16_t rev[MATRIX_HEIGHT];
+    _reverseBits(invert, rev);
+    _bitmap2frame(rev, frame);
   }
   else {
-    for (int i = 0; i < MATRIX_HEIGHT; i++) {
-      _bitmap[i] = bitmap[i];
-    }
+    _bitmap2frame(invert, frame);
   }
-  uint32_t frame[FRAME_HEIGHT];
-  _bitmap2frame(frame);
   _matrix.loadFrame(frame);
 }
 
@@ -410,22 +445,12 @@ void LEDMatrixDigit::_setMatrix(uint16_t bitmap[MATRIX_HEIGHT])
  *
  * Inverted 'bitmap' is copied to '_bitmap' private member.
 */
-void LEDMatrixDigit::_setMatrixInvert(uint16_t bitmap[MATRIX_HEIGHT])
+void LEDMatrixDigit::_setMatrixInvert(const uint16_t bitmap[MATRIX_HEIGHT])
 {
-  if (_upside_down) {
-    _reverseBits(bitmap, _bitmap);
+  for (int i = 0; i < MATRIX_HEIGHT; i++) {
+    _bitmap[i] = bitmap[i];
   }
-  else {
-    for (int i = 0; i < MATRIX_HEIGHT; i++) {
-      _bitmap[i] = bitmap[i];
-    }
-  }
-  uint32_t frame[FRAME_HEIGHT];
-  _bitmap2frame(frame);
-  for (int i = 0; i < FRAME_HEIGHT; i++) {
-    frame[i] = ~frame[i]; // invert bits
-  }
-  _matrix.loadFrame(frame);
+  _setMatrixInvert();
 }
 
 /**
@@ -434,7 +459,7 @@ void LEDMatrixDigit::_setMatrixInvert(uint16_t bitmap[MATRIX_HEIGHT])
  * @param x is 12x8 bit matrix.
  * @param y is reversed matrix.
 */
-void LEDMatrixDigit::_reverseBits(uint16_t x[MATRIX_HEIGHT], uint16_t r[MATRIX_HEIGHT]) {
+void LEDMatrixDigit::_reverseBits(const uint16_t x[MATRIX_HEIGHT], uint16_t r[MATRIX_HEIGHT]) {
   for (int i = 0; i < MATRIX_HEIGHT; i++) {
     r[i] = _reverseBits(x[MATRIX_HEIGHT - i - 1] & 0x0fff);
   }

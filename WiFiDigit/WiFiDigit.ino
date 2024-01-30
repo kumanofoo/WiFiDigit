@@ -81,7 +81,7 @@ void setup() {
 #ifdef _TEST_PATTERN_
   font.testPattern(); for (;;);
 #endif /* _TEST_PATTERN_ */
-  
+
   uint16_t bitmap[8];
   // bitmap
   // 001100011000
@@ -204,7 +204,7 @@ void loop() {
       delay(blink_off);
     }
   }
-  // blink flipped numbers if blink=flipped is true:
+  // blink flipped numbers if blink_flipped is true:
   if (blink_flipped) {
     if (font.blinkInvert() == 0) {
       delay(blink_on);
@@ -230,9 +230,6 @@ void printWifiStatus() {
   Serial.print("signal strength (RSSI):");
   Serial.print(rssi);
   Serial.println(" dBm");
-  // print where to go in a browser:
-  Serial.print("To see this page in action, open a browser to http://");
-  Serial.println(ip);
 }
 
 bool isInteger(String str) {
