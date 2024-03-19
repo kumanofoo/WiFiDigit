@@ -1,7 +1,7 @@
 # Keepipe
 Keepipe, which is one of WiFiDigit clients, display the lowest or highest temperature
 on the LED matrix on Arduino Uno R4 WiFi.
-It will notify you of the possibility of water pipe freezing🧊 or the risk of heatstroke🥵.
+It will notify you of the possibility of water pipe ⛄️freezing🧊 or the risk of 🌞heatstroke🥵.
 
 This app fetches the temperature from [Japan Meteorological Agency](https://www.jma.go.jp/) and
 sends them to WiFiDigit over HTTP.
