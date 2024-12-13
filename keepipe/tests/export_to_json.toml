@@ -33,4 +33,4 @@ method = "PUT"
 command = "blink-flipped/1000.10"
 
 [json]
-filename = "output.json"
+filename = "tests/export_to_json_output.json"

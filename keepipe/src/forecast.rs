@@ -1,35 +1,33 @@
 //! Get the lowest or hightest temperature from Japan Meteorological Agency.
 
-use log::{warn, error};
 use chrono::{DateTime, Duration, Local, Timelike};
-
+use log::{error, warn};
 
 const API: &str = "https://www.jma.go.jp/bosai/forecast/data/forecast/";
 
 /// Get the lowest or highest temperature from [Japan Meteorological Agency](https://www.jma.go.jp/).
-/// 
+///
 /// The temperatures is in:
 /// > https://www.jma.go.jp/bosai/forecast/data/forecast/{*offices*}.json
-/// 
+///
 /// {*offices*} means an area in Japan. It is defined in:
 /// > <https://www.jma.go.jp/bosai/common/const/area.json>
 ///
 /// For example, 016000 is 'Ishikari Sorachi Shiribeshi' area. You can get the weather forecast in its area:
-/// ```
+/// ```bash
 /// $ curl https://www.jma.go.jp/bosai/forecast/data/forecast/016000.json
 /// ```
 ///  
 /// The path of the target temperature in the JSON is '0/timeSeries/2/areas/{*area index*}/temps'.
-/// {*area index*} is the index of an sub area in the *offices*. 
+/// {*area index*} is the index of an sub area in the *offices*.
 /// For example, 0 is '札幌'(Sapporo) area and the *area code* is 14163 in 016000.json:
-/// ```
-/// # 016000.json
+/// ```json
 /// [
 ///   {
 ///     publishingOffice: "札幌管区気象台",
 ///     reportDatetime: "2024-01-23T05:00:00+09:00",
-///     timeSeries: [ {...}, {...}, {
-///       timeDefines: [...],
+///     timeSeries: [ {..}, {..}, {
+///       timeDefines: [..],
 ///       areas: [
 ///         {
 ///            area: {
@@ -38,20 +36,20 @@ const API: &str = "https://www.jma.go.jp/bosai/forecast/data/forecast/";
 ///            },
 ///            temps: ["4", "4", "-1", "1"]
 ///         },
-///         {...}, {...},
+///         {..}, {..},
 ///       ]
 ///     }]
 ///   },
-///   {...}
+///   {..}
 /// ]
 /// ```
-/// 
+///
 /// # Examples
 /// Print the lowest and highest temperature in Sapporo.
-/// 
+///
 /// ```no_run
-/// use Forecast;
-/// 
+/// use keepipe::forecast::Forecast;
+///
 /// fn main() {
 ///     let mut f = Forecast::new(String::from("016000"), String::from("14163"), 5);
 ///     f.update_temperature();
@@ -73,7 +71,7 @@ pub struct Forecast {
 
 impl Forecast {
     /// Constructs a new [Forecast].
-    /// 
+    ///
     /// The weather forecast to be retrieved is determinned based on execution time and `reference_time`,
     /// whether it is today's or tomorrow's forecast.
     /// If the execution time is before `reference_time`, it will retieve today's forecast;
@@ -102,28 +100,28 @@ impl Forecast {
             Err(why) => {
                 error!("can't create client: {:?}", why);
                 return;
-            },
+            }
         };
         let res = match client.get(api_url).send() {
             Ok(r) => r,
             Err(why) => {
                 error!("can't get http response: {:?}", why);
                 return;
-            },
+            }
         };
         let body = match res.text() {
             Ok(b) => b,
             Err(why) => {
                 error!("can't get text from response: {:?}", why);
                 return;
-            },
+            }
         };
         match serde_json::from_str(&body) {
             Ok(j) => self.forecast = Some(j),
             Err(why) => {
                 error!("can't get json from response: {:?}", why);
                 return;
-            },
+            }
         };
     }
 
@@ -164,7 +162,7 @@ impl Forecast {
             _ => {
                 warn!("No forecast");
                 return;
-            },
+            }
         };
         let areas = json[0]["timeSeries"][2]["areas"].as_array().unwrap();
         let mut temps_json: Option<&Vec<serde_json::Value>> = None;
@@ -175,8 +173,11 @@ impl Forecast {
                 break;
             }
         }
-        let temps:Vec<f32> = match temps_json {
-            Some(t) => t.iter().map(|x| x.as_str().unwrap().parse::<f32>().unwrap()).collect(),
+        let temps: Vec<f32> = match temps_json {
+            Some(t) => t
+                .iter()
+                .map(|x| x.as_str().unwrap().parse::<f32>().unwrap())
+                .collect(),
             _ => return,
         };
         let time_defines = json[0]["timeSeries"][2]["timeDefines"].as_array().unwrap();

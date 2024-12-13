@@ -95,4 +95,12 @@ fn main() {
         debug!("command: {}", command);
         method.send(command);
     }
+
+    if let Some(json_file) = config.json {
+        let _ = json_file
+            .export(temp_highest, temp_lowest)
+            .unwrap_or_else(|why| {
+                warn!("failed to export to {}: {}", json_file.filename, why);
+            });
+    }
 }

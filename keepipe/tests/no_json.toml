@@ -31,6 +31,3 @@ command = "bar/{nowHour}"
 lowest = -2
 method = "PUT"
 command = "blink-flipped/1000.10"
-
-[json]
-filename = "output.json"
