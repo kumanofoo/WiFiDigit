@@ -1,6 +1,6 @@
 //! Get the lowest or hightest temperature from Japan Meteorological Agency.
 
-use chrono::{DateTime, Duration, Local, Timelike};
+use chrono::{DateTime, Local, Timelike};
 use log::{error, warn};
 
 const API: &str = "https://www.jma.go.jp/bosai/forecast/data/forecast/";
@@ -180,37 +180,31 @@ impl Forecast {
                 .collect(),
             _ => return,
         };
-        let time_defines = json[0]["timeSeries"][2]["timeDefines"].as_array().unwrap();
 
         let now = Local::now();
-        let mut target_datetime = now
-            .with_hour(0)
-            .unwrap()
-            .with_minute(0)
-            .unwrap()
-            .with_second(0)
-            .unwrap()
-            .with_nanosecond(0)
-            .unwrap();
-        if now.hour() >= self.reference_time {
-            target_datetime += Duration::days(1);
-        }
+	if 5 <= now.hour() && now.hour() < 17 {
+	    // daytime
+	    self.temp_lowest = match temps.get(2) {
+		Some(t) => Some(*t),
+		None => None,
+	    };
+	    self.temp_highest = match temps.get(0) {
+		Some(t) => Some(*t),
+		None => None,
+	    };
+	}
+	else {
+	    // nighttime
+	    self.temp_lowest = match temps.get(0) {
+		Some(t) => Some(*t),
+		None => None,
+	    };
+	    self.temp_highest = match temps.get(1) {
+		Some(t) => Some(*t),
+		None => None,
+	    };
+	}
 
-        let mut next_temps: Vec<f32> = Vec::new();
-        for (time_define, temp) in time_defines.iter().zip(temps.iter()) {
-            let time: DateTime<Local> = DateTime::parse_from_rfc3339(time_define.as_str().unwrap())
-                .unwrap()
-                .into();
-            if time >= target_datetime && time < (target_datetime + Duration::days(1)) {
-                next_temps.push(*temp);
-            }
-        }
-        if next_temps.len() != 2 {
-            warn!("mismatch number of temperatures");
-            return;
-        }
-        self.temp_lowest = Some(next_temps[0]);
-        self.temp_highest = Some(next_temps[1]);
         self.update = Local::now();
     }
 }
