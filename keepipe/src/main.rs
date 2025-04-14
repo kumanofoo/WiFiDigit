@@ -7,6 +7,7 @@ use log::{debug, error, warn};
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
+#[command(version)]
 struct Args {
     /// Check configuration TOML
     #[arg(short, long)]
